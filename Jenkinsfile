@@ -6,7 +6,7 @@ pipeline {
     BACKEND_IMAGE   = "${DOCKERHUB_USER}/ecommerce-backend"
     FRONTEND_IMAGE  = "${DOCKERHUB_USER}/ecommerce-frontend"
     GIT_TAG         = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-    NODE_HOME       = tool 'Node18'
+    NODE_HOME       = tool 'node18'
     PATH            = "${NODE_HOME}/bin:${env.PATH}"
   }
 
