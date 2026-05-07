@@ -117,26 +117,25 @@ pipeline {
     stage('Deploy to Minikube') {
       steps {
         sh """
-          /opt/homebrew/bin/kubectl config use-context minikube
-          /opt/homebrew/bin/kubectl apply -f k8s/deployment.yaml
-          /opt/homebrew/bin/kubectl set image deployment/ecommerce-backend \
+          kubectl config use-context minikube
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/ecommerce-backend \
             backend=${BACKEND_IMAGE}:${GIT_TAG}
-          /opt/homebrew/bin/kubectl set image deployment/ecommerce-frontend \
+          kubectl set image deployment/ecommerce-frontend \
             frontend=${FRONTEND_IMAGE}:${GIT_TAG}
-          /opt/homebrew/bin/kubectl rollout status deployment/ecommerce-backend --timeout=120s
-          /opt/homebrew/bin/kubectl rollout status deployment/ecommerce-frontend --timeout=120s
+          kubectl rollout status deployment/ecommerce-backend --timeout=120s
+          kubectl rollout status deployment/ecommerce-frontend --timeout=120s
         """
       }
       post {
         failure {
           sh """
-            /opt/homebrew/bin/kubectl rollout undo deployment/ecommerce-backend || true
-            /opt/homebrew/bin/kubectl rollout undo deployment/ecommerce-frontend || true
+            kubectl rollout undo deployment/ecommerce-backend || true
+            kubectl rollout undo deployment/ecommerce-frontend || true
           """
         }
       }
     }
-
   }
 
    post {
