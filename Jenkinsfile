@@ -145,8 +145,8 @@ pipeline {
   post {
     success {
       echo "Deployed ${GIT_TAG} successfully!"
-      echo "Frontend: http://REPLACE_WORKER_IP:30080"
-      echo "Backend:  http://REPLACE_WORKER_IP:30081"
+      echo "Frontend: http://3.88.14.221:30080"
+      echo "Backend:  http://3.88.14.221:30081"
     }
     failure {
       echo "Pipeline FAILED for commit ${GIT_TAG}"
