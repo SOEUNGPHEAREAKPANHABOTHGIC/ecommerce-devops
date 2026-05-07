@@ -139,11 +139,10 @@ pipeline {
 
   }
 
-  post {
+   post {
     success {
-      echo "Deployed ${GIT_TAG} to Minikube!"
-      echo "Frontend: http://$(minikube ip):30080"
-      echo "Backend:  http://$(minikube ip):30081"
+      echo "Deployed ${GIT_TAG} to Minikube successfully!"
+      echo "Run: minikube service ecommerce-frontend-svc --url"
     }
     failure {
       echo "Pipeline FAILED for commit ${GIT_TAG}"
