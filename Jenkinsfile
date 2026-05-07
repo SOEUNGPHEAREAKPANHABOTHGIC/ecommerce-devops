@@ -1,13 +1,15 @@
 pipeline {
   agent any
 
+  tools {
+    nodejs 'node18'
+  }
+
   environment {
     DOCKERHUB_USER  = "both007"
     BACKEND_IMAGE   = "${DOCKERHUB_USER}/ecommerce-backend"
     FRONTEND_IMAGE  = "${DOCKERHUB_USER}/ecommerce-frontend"
     GIT_TAG         = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-    NODE_HOME       = tool 'node18'
-    PATH            = "${NODE_HOME}/bin:${env.PATH}"
   }
 
   options {
@@ -64,7 +66,7 @@ pipeline {
       }
     }
 
-   stage('Trivy Security Scan') {
+    stage('Trivy Security Scan') {
       parallel {
         stage('Scan Backend') {
           steps {
@@ -115,21 +117,21 @@ pipeline {
     stage('Deploy to Minikube') {
       steps {
         sh """
-          kubectl config use-context minikube
-          kubectl apply -f k8s/deployment.yaml
-          kubectl set image deployment/ecommerce-backend \
+          /opt/homebrew/bin/kubectl config use-context minikube
+          /opt/homebrew/bin/kubectl apply -f k8s/deployment.yaml
+          /opt/homebrew/bin/kubectl set image deployment/ecommerce-backend \
             backend=${BACKEND_IMAGE}:${GIT_TAG}
-          kubectl set image deployment/ecommerce-frontend \
+          /opt/homebrew/bin/kubectl set image deployment/ecommerce-frontend \
             frontend=${FRONTEND_IMAGE}:${GIT_TAG}
-          kubectl rollout status deployment/ecommerce-backend --timeout=120s
-          kubectl rollout status deployment/ecommerce-frontend --timeout=120s
+          /opt/homebrew/bin/kubectl rollout status deployment/ecommerce-backend --timeout=120s
+          /opt/homebrew/bin/kubectl rollout status deployment/ecommerce-frontend --timeout=120s
         """
       }
       post {
         failure {
           sh """
-            kubectl rollout undo deployment/ecommerce-backend || true
-            kubectl rollout undo deployment/ecommerce-frontend || true
+            /opt/homebrew/bin/kubectl rollout undo deployment/ecommerce-backend || true
+            /opt/homebrew/bin/kubectl rollout undo deployment/ecommerce-frontend || true
           """
         }
       }
@@ -140,6 +142,8 @@ pipeline {
   post {
     success {
       echo "Deployed ${GIT_TAG} to Minikube!"
+      echo "Frontend: http://$(minikube ip):30080"
+      echo "Backend:  http://$(minikube ip):30081"
     }
     failure {
       echo "Pipeline FAILED for commit ${GIT_TAG}"
