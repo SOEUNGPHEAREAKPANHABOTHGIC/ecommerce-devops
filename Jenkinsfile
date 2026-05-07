@@ -6,6 +6,7 @@ pipeline {
     BACKEND_IMAGE   = "${DOCKERHUB_USER}/ecommerce-backend"
     FRONTEND_IMAGE  = "${DOCKERHUB_USER}/ecommerce-frontend"
     GIT_TAG         = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    PATH            = "/Users/panhaboth/.nvm/versions/node/v18.20.8/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
   }
 
   options {
