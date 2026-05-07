@@ -24,8 +24,6 @@ spec:
         prometheus.io/port:   "5000"
         prometheus.io/path:   "/metrics"
     spec:
-      imagePullSecrets:
-      - name: regcred
       containers:
       - name: backend
         image: both007/ecommerce-backend:latest
