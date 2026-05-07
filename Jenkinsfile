@@ -1,15 +1,13 @@
 pipeline {
   agent any
 
-  tools {
-    nodejs 'NodeJS-18'
-  }
-
   environment {
     DOCKERHUB_USER  = "both007"
     BACKEND_IMAGE   = "${DOCKERHUB_USER}/ecommerce-backend"
     FRONTEND_IMAGE  = "${DOCKERHUB_USER}/ecommerce-frontend"
     GIT_TAG         = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    NODE_HOME       = tool 'NodeJS-18'
+    PATH            = "${NODE_HOME}/bin:${env.PATH}"
   }
 
   options {
@@ -140,7 +138,6 @@ pipeline {
   post {
     success {
       echo "Deployed ${GIT_TAG} to Minikube!"
-      echo "Run: minikube service ecommerce-frontend-svc"
     }
     failure {
       echo "Pipeline FAILED for commit ${GIT_TAG}"
