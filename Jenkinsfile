@@ -64,7 +64,7 @@ pipeline {
       }
     }
 
-    stage('Trivy Security Scan') {
+   stage('Trivy Security Scan') {
       parallel {
         stage('Scan Backend') {
           steps {
@@ -75,6 +75,7 @@ pipeline {
                 --severity HIGH,CRITICAL \
                 --exit-code 0 \
                 --no-progress \
+                --timeout 10m \
                 ${BACKEND_IMAGE}:${GIT_TAG}
             """
           }
@@ -88,6 +89,7 @@ pipeline {
                 --severity HIGH,CRITICAL \
                 --exit-code 0 \
                 --no-progress \
+                --timeout 10m \
                 ${FRONTEND_IMAGE}:${GIT_TAG}
             """
           }
