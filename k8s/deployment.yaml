@@ -1,0 +1,136 @@
+# ── Backend Deployment ────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-backend
+  labels:
+    app: ecommerce-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ecommerce-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ecommerce-backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "5000"
+        prometheus.io/path:   "/metrics"
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: backend
+        image: both007/ecommerce-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "5000"
+        resources:
+          requests: { cpu: "100m", memory: "128Mi" }
+          limits:   { cpu: "300m", memory: "256Mi" }
+        livenessProbe:
+          httpGet:  { path: /health, port: 5000 }
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:  { path: /ready, port: 5000 }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# ── Backend Service ───────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-backend-svc
+spec:
+  type: NodePort
+  selector:
+    app: ecommerce-backend
+  ports:
+  - port: 5000
+    targetPort: 5000
+    nodePort: 30081
+---
+# ── Frontend Deployment ───────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-frontend
+  labels:
+    app: ecommerce-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ecommerce-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ecommerce-frontend
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: frontend
+        image: both007/ecommerce-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests: { cpu: "50m",  memory: "64Mi" }
+          limits:   { cpu: "200m", memory: "128Mi" }
+        livenessProbe:
+          httpGet:  { path: /health, port: 80 }
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:  { path: /health, port: 80 }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# ── Frontend Service ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-frontend-svc
+spec:
+  type: NodePort
+  selector:
+    app: ecommerce-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
+---
+# ── HPA Backend ───────────────────────────────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ecommerce-backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target: { type: Utilization, averageUtilization: 60 }
