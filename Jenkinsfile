@@ -6,7 +6,6 @@ pipeline {
     BACKEND_IMAGE   = "${DOCKERHUB_USER}/ecommerce-backend"
     FRONTEND_IMAGE  = "${DOCKERHUB_USER}/ecommerce-frontend"
     GIT_TAG         = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-    K8S_MASTER      = "10.0.1.152"
   }
 
   options {
@@ -109,33 +108,25 @@ pipeline {
       }
     }
 
-    stage('Deploy to Kubernetes') {
+    stage('Deploy to Minikube') {
       steps {
-        sshagent(['ANSIBLE_SSH_KEY']) {
-          sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@${K8S_MASTER} '
-              kubectl set image deployment/ecommerce-backend \
-                backend=${BACKEND_IMAGE}:${GIT_TAG} && \
-              kubectl set image deployment/ecommerce-frontend \
-                frontend=${FRONTEND_IMAGE}:${GIT_TAG} && \
-              kubectl rollout status deployment/ecommerce-backend --timeout=120s && \
-              kubectl rollout status deployment/ecommerce-frontend --timeout=120s && \
-              echo "Deploy complete!"
-            '
-          """
-        }
+        sh """
+          kubectl config use-context minikube
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/ecommerce-backend \
+            backend=${BACKEND_IMAGE}:${GIT_TAG}
+          kubectl set image deployment/ecommerce-frontend \
+            frontend=${FRONTEND_IMAGE}:${GIT_TAG}
+          kubectl rollout status deployment/ecommerce-backend --timeout=120s
+          kubectl rollout status deployment/ecommerce-frontend --timeout=120s
+        """
       }
       post {
         failure {
-          sshagent(['ANSIBLE_SSH_KEY']) {
-            sh """
-              ssh -o StrictHostKeyChecking=no ubuntu@${K8S_MASTER} '
-                kubectl rollout undo deployment/ecommerce-backend
-                kubectl rollout undo deployment/ecommerce-frontend
-                echo "Rolled back!"
-              '
-            """
-          }
+          sh """
+            kubectl rollout undo deployment/ecommerce-backend || true
+            kubectl rollout undo deployment/ecommerce-frontend || true
+          """
         }
       }
     }
@@ -144,17 +135,14 @@ pipeline {
 
   post {
     success {
-      echo "Deployed ${GIT_TAG} successfully!"
-      echo "Frontend: http://3.88.14.221:30080"
-      echo "Backend:  http://3.88.14.221:30081"
+      echo "Deployed ${GIT_TAG} to Minikube!"
+      echo "Run: minikube service ecommerce-frontend-svc"
     }
     failure {
       echo "Pipeline FAILED for commit ${GIT_TAG}"
     }
     always {
       sh 'docker logout || true'
-      sh "docker rmi ${BACKEND_IMAGE}:${GIT_TAG} || true"
-      sh "docker rmi ${FRONTEND_IMAGE}:${GIT_TAG} || true"
     }
   }
 }
